@@ -18,7 +18,8 @@ import * as Icons from '../icons'
  * @param {string} type - Type of alert: 'info', 'warning', 'error', 'maintenance', 'custom'
  * @param {string} message - Alert message text
  * @param {string} customIcon - Icon name for custom type (e.g., 'NoticeInfo', 'Check')
- * @param {string} customIconBackgroundColor - Background color for custom icon (e.g., '#4A90E2', 'blue')
+ * @param {string} customIconBackgroundColor - Color token reference (e.g., 'buttonColors.highBlue', 'colors.blue.blue60') or 'custom'
+ * @param {string} customColorHex - Custom hex color when customIconBackgroundColor is 'custom' (e.g., '#4A90E2')
  * @param {string} primaryButtonLabel - Label for primary action button
  * @param {function} onPrimaryClick - Handler for primary button click
  * @param {string} secondaryButtonLabel - Label for secondary action button
@@ -28,13 +29,43 @@ export const AlertBanner = ({
   type = 'info',
   message,
   customIcon,
-  customIconBackgroundColor = buttonColors.highBlue,
+  customIconBackgroundColor = 'buttonColors.highBlue',
+  customColorHex,
   primaryButtonLabel,
   onPrimaryClick,
   secondaryButtonLabel,
   onSecondaryClick,
   ...rest
 }) => {
+  // Helper function to resolve color token references
+  const resolveColor = (colorRef) => {
+    if (!colorRef) return buttonColors.highBlue
+
+    // If it's 'custom', use the custom hex value
+    if (colorRef === 'custom') {
+      return customColorHex || buttonColors.highBlue
+    }
+
+    // Parse color token reference (e.g., 'buttonColors.highBlue' or 'colors.blue.blue60')
+    const parts = colorRef.split('.')
+
+    if (parts[0] === 'buttonColors') {
+      return buttonColors[parts[1]] || buttonColors.highBlue
+    } else if (parts[0] === 'colors') {
+      const colorCategory = parts[1] // e.g., 'blue', 'gray'
+      const colorShade = parts[2] // e.g., 'blue60', 'gray50'
+      return colors[colorCategory]?.[colorShade] || buttonColors.highBlue
+    } else if (parts[0] === 'transparentColors') {
+      return transparentColors[parts[1]] || buttonColors.highBlue
+    }
+
+    // Fallback: if it looks like a hex color, use it directly
+    if (colorRef.startsWith('#')) {
+      return colorRef
+    }
+
+    return buttonColors.highBlue
+  }
   // Type configurations for icon and background color
   const typeConfig = {
     info: {
@@ -55,7 +86,7 @@ export const AlertBanner = ({
     },
     custom: {
       icon: customIcon ? Icons[customIcon] || NoticeInfo : NoticeInfo,
-      backgroundColor: customIconBackgroundColor
+      backgroundColor: resolveColor(customIconBackgroundColor)
     }
   }
 
@@ -139,6 +170,7 @@ AlertBanner.propTypes = {
   message: PropTypes.string,
   customIcon: PropTypes.string,
   customIconBackgroundColor: PropTypes.string,
+  customColorHex: PropTypes.string,
   primaryButtonLabel: PropTypes.string,
   onPrimaryClick: PropTypes.func,
   secondaryButtonLabel: PropTypes.string,
